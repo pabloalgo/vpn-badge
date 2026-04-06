@@ -1,0 +1,8 @@
+{
+	"uuid": "vpn-badge@pabloalgo.dev",
+	"name": "VPN Badge",
+	"description": "AdGuard VPN indicator for GNOME Shell top bar. Wraps adguardvpn-cli. No GUI needed.",
+	"shell-version": ["48", "49", "49.5", "50"],
+	"url": "https://github.com/pabloalgo/vpn-badge",
+	"version": 1
+}
