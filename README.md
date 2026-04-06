@@ -32,18 +32,29 @@ It adds:
 - AdGuard VPN CLI installed at `/usr/local/bin/adguardvpn-cli`
 - GNOME Shell 48+
 
-## Development install
+## Development workflow
+
+Source of truth:
+
+- repo: `/home/pablo/dev/projects/gnome/vpn/`
+- GNOME Shell dev install: `/home/pablo/.local/share/gnome-shell/extensions/vpn-badge@pabloalgo.dev/`
+
+Install the development symlinks:
 
 ```bash
 make dev
 ```
 
-Then disable/enable the extension and log out/in on Wayland:
+This links the extension files from the repo into GNOME Shell's extensions folder.
+
+After changes, reload the extension:
 
 ```bash
 gnome-extensions disable vpn-badge@pabloalgo.dev
 gnome-extensions enable vpn-badge@pabloalgo.dev
 ```
+
+On Wayland, a logout/login may still be needed if GNOME Shell caches stale code.
 
 ## Install
 
@@ -63,7 +74,6 @@ make uninstall
 - `prefs.js` — preferences window
 - `schemas/org.gnome.shell.extensions.vpn-badge.gschema.xml` — GSettings schema
 - `CHANGELOG.md` — Keep a Changelog format
-- 3 favorite locations configurable in preferences
 
 ## License
 
