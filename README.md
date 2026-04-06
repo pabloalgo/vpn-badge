@@ -1,47 +1,60 @@
 # vpn-badge
 
-> GNOME Shell extension — AdGuard VPN status in the top bar
+GNOME Shell extension for AdGuard VPN.
 
-Connect, disconnect, and browse locations from the panel menu.
-No external GUI needed. Wraps [`adguardvpn-cli`](https://github.com/AdguardTeam/AdGuardVPNCLI).
+It adds:
+- a top-bar status indicator
+- a Quick Settings toggle
+- connection status and location list
+- preferences for CLI path, polling interval, notifications, and duration display
 
 ## Features
 
-- 🟢/🔴 VPN status icon in top bar
-- ⚡ Connect to fastest location
-- 📍 Browse and connect to specific cities
-- ✋ One-click disconnect
-- 🔄 Auto-refresh every 15 seconds
-- Non-blocking (async CLI calls — no UI freezes)
+- Top bar icon: green when connected, grey when disconnected
+- Quick Settings toggle for connect/disconnect
+- Fastest-location connect
+- Location list with ping sorting
+- Desktop notifications on state changes
+- Auto-refresh every 15 seconds by default
+- Non-blocking CLI calls
+- Preferences window for basic configuration
+
+## Requirements
+
+- AdGuard VPN CLI installed at `/usr/local/bin/adguardvpn-cli`
+- GNOME Shell 48+
+
+## Development install
+
+```bash
+make dev
+```
+
+Then disable/enable the extension and log out/in on Wayland:
+
+```bash
+gnome-extensions disable vpn-badge@pabloalgo.dev
+gnome-extensions enable vpn-badge@pabloalgo.dev
+```
 
 ## Install
 
 ```bash
-git clone https://github.com/pabloalgo/vpn-badge.git
-cd vpn-badge
 make install
 ```
-
-Or manually:
-
-```bash
-cp -r . ~/.local/share/gnome-shell/extensions/vpn-badge@pabloalgo.dev/
-gnome-extensions enable vpn-badge@pabloalgo.dev
-```
-
-Then **logout and login** (Wayland requires re-login).
 
 ## Uninstall
 
 ```bash
-gnome-extensions disable vpn-badge@pabloalgo.dev
-rm -rf ~/.local/share/gnome-shell/extensions/vpn-badge@pabloalgo.dev
+make uninstall
 ```
 
-## Requirements
+## Files
 
-- [AdGuard VPN CLI](https://github.com/AdguardTeam/AdGuardVPNCLI) at `/usr/local/bin/adguardvpn-cli`
-- GNOME Shell 48+
+- `extension.js` — extension logic
+- `prefs.js` — preferences window
+- `schemas/org.gnome.shell.extensions.vpn-badge.gschema.xml` — GSettings schema
+- `CHANGELOG.md` — Keep a Changelog format
 
 ## License
 

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.vpn-badge" path="/org/gnome/shell/extensions/vpn-badge/">
+    <key name="cli-path" type="s">
+      <default>'/usr/local/bin/adguardvpn-cli'</default>
+      <summary>CLI path</summary>
+      <description>Path to the AdGuard VPN CLI executable.</description>
+    </key>
+
+    <key name="poll-interval" type="u">
+      <default>15</default>
+      <summary>Polling interval</summary>
+      <description>Seconds between automatic status refreshes.</description>
+    </key>
+
+    <key name="notifications" type="b">
+      <default>true</default>
+      <summary>Notifications</summary>
+      <description>Show a desktop notification when the VPN state changes.</description>
+    </key>
+
+    <key name="show-duration" type="b">
+      <default>true</default>
+      <summary>Show duration</summary>
+      <description>Show connection duration in the status label when available.</description>
+    </key>
+  </schema>
+</schemalist>
