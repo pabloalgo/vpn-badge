@@ -271,7 +271,7 @@ class VPNController {
 	}
 
 	async disconnect() {
-		const { stderr } = await this._exec(["disconnect", "-y"]);
+		const { stderr } = await this._exec(["disconnect"]);
 		if (stderr) {
 			this.state.error = stderr;
 			this._emit();
@@ -490,7 +490,7 @@ const VPNQuickSettings = GObject.registerClass(
 
 			// Add to Quick Settings panel if available
 			const quickSettingsPanel = Main.panel.statusArea.quickSettings;
-			if (typeof quickSettingsPanel?.addExternalIndicator === 'function') {
+			if (typeof quickSettingsPanel?.addExternalIndicator === "function") {
 				quickSettingsPanel.addExternalIndicator(this, 2);
 			}
 		}
