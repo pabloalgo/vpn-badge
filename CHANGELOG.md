@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Quick Settings toggle in GNOME Shell
-- Preferences window for CLI path, polling interval, notifications, and duration display
+- Preferences window for CLI path, polling interval, notifications, duration display, and 3 favorites
 - Desktop notifications for VPN state changes
 - Connection duration display in the status label
+- Reconnect Last action and Favorites submenu
 - GSettings schema and install targets
 
 ### Fixed

@@ -27,6 +27,17 @@ export default class VPNBadgePreferences extends ExtensionPreferences {
 		general.add(this._notificationsRow());
 		general.add(this._durationRow());
 
+		const favorites = new Adw.PreferencesGroup({
+			title: _("Favorites"),
+			description: _(
+				"Up to three quick-connect locations shown in the VPN menu.",
+			),
+		});
+		page.add(favorites);
+		favorites.add(this._favoriteRow("favorite-1", _("Favorite 1")));
+		favorites.add(this._favoriteRow("favorite-2", _("Favorite 2")));
+		favorites.add(this._favoriteRow("favorite-3", _("Favorite 3")));
+
 		window.connect("close-request", () => {
 			this._settings = null;
 		});
@@ -114,6 +125,27 @@ export default class VPNBadgePreferences extends ExtensionPreferences {
 
 		row.add_suffix(toggle);
 		row.activatable_widget = toggle;
+		return row;
+	}
+
+	_favoriteRow(key, title) {
+		const row = new Adw.ActionRow({
+			title,
+			subtitle: _("Location name used for the Favorites submenu"),
+		});
+
+		const entry = new Gtk.Entry({
+			hexpand: true,
+			placeholder_text: _("e.g. Paris"),
+			text: this._settings.get_string(key),
+		});
+
+		entry.connect("changed", () => {
+			this._settings.set_string(key, entry.text.trim());
+		});
+
+		row.add_suffix(entry);
+		row.activatable_widget = entry;
 		return row;
 	}
 }

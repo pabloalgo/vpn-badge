@@ -57,6 +57,9 @@ class VPNController {
 		this._settings.connect("changed::show-duration", () =>
 			this.refreshStatus(),
 		);
+		this._settings.connect("changed::favorite-1", () => this._emit());
+		this._settings.connect("changed::favorite-2", () => this._emit());
+		this._settings.connect("changed::favorite-3", () => this._emit());
 	}
 
 	get cliPath() {
@@ -270,6 +273,15 @@ class VPNController {
 		await this.refreshStatus({ notify: true });
 	}
 
+	async reconnectLast() {
+		const { stderr } = await this._exec(["connect"]);
+		if (stderr) {
+			this.state.error = stderr;
+			this._emit();
+		}
+		await this.refreshStatus({ notify: true });
+	}
+
 	async disconnect() {
 		const { stderr } = await this._exec(["disconnect"]);
 		if (stderr) {
@@ -286,6 +298,12 @@ class VPNController {
 			this._emit();
 		}
 		await this.refreshStatus({ notify: true });
+	}
+
+	get favoriteLocations() {
+		return ["favorite-1", "favorite-2", "favorite-3"]
+			.map((key) => this._settings.get_string(key).trim())
+			.filter(Boolean);
 	}
 
 	async toggle() {
@@ -352,6 +370,17 @@ const VPNIndicator = GObject.registerClass(
 			);
 			this.menu.addMenuItem(this._connectFastest);
 
+			this._reconnectLast = new PopupMenu.PopupMenuItem("↩ Reconnect Last");
+			this._reconnectLast.connect("activate", () =>
+				this._service.reconnectLast(),
+			);
+			this.menu.addMenuItem(this._reconnectLast);
+
+			this._favoritesSubmenu = new PopupMenu.PopupSubMenuMenuItem(
+				"⭐ Favorites",
+			);
+			this.menu.addMenuItem(this._favoritesSubmenu);
+
 			this._disconnectItem = new PopupMenu.PopupMenuItem("✋ Disconnect");
 			this._disconnectItem.connect("activate", () =>
 				this._service.disconnect(),
@@ -391,8 +420,29 @@ const VPNIndicator = GObject.registerClass(
 				? "color: #4caf50;"
 				: "color: #9e9e9e;";
 			this._connectFastest.visible = !state.connected;
+			this._reconnectLast.visible = !state.connected;
 			this._disconnectItem.visible = state.connected;
+			this._buildFavorites();
 			this._buildLocations(state.locations);
+		}
+
+		_buildFavorites() {
+			this._favoritesSubmenu.menu.removeAll();
+
+			const favorites = this._service.favoriteLocations;
+			if (!favorites.length) {
+				const empty = new PopupMenu.PopupMenuItem("No favorites set", {
+					reactive: false,
+				});
+				this._favoritesSubmenu.menu.addMenuItem(empty);
+				return;
+			}
+
+			for (const favorite of favorites) {
+				const item = new PopupMenu.PopupMenuItem(favorite);
+				item.connect("activate", () => this._service.connectLocation(favorite));
+				this._favoritesSubmenu.menu.addMenuItem(item);
+			}
 		}
 
 		_buildLocations(locations) {
@@ -443,6 +493,11 @@ const VPNQuickToggle = GObject.registerClass(
 				null,
 			);
 			this.connect("clicked", () => this._service.toggle());
+
+			const reconnectLastItem = this.menu.addAction("Reconnect Last", () =>
+				this._service.reconnectLast(),
+			);
+			reconnectLastItem.visible = true;
 
 			const refreshItem = this.menu.addAction("Refresh", () =>
 				this._service.refreshAll(),

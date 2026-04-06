@@ -24,5 +24,23 @@
       <summary>Show duration</summary>
       <description>Show connection duration in the status label when available.</description>
     </key>
+
+    <key name="favorite-1" type="s">
+      <default>''</default>
+      <summary>Favorite location 1</summary>
+      <description>First quick-connect favorite location.</description>
+    </key>
+
+    <key name="favorite-2" type="s">
+      <default>''</default>
+      <summary>Favorite location 2</summary>
+      <description>Second quick-connect favorite location.</description>
+    </key>
+
+    <key name="favorite-3" type="s">
+      <default>''</default>
+      <summary>Favorite location 3</summary>
+      <description>Third quick-connect favorite location.</description>
+    </key>
   </schema>
 </schemalist>
