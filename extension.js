@@ -490,7 +490,7 @@ const VPNQuickSettings = GObject.registerClass(
 
 			// Add to Quick Settings panel if available
 			const quickSettingsPanel = Main.panel.statusArea.quickSettings;
-			if (quickSettingsPanel) {
+			if (typeof quickSettingsPanel?.addExternalIndicator === 'function') {
 				quickSettingsPanel.addExternalIndicator(this, 2);
 			}
 		}
