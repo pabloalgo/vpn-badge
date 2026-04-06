@@ -6,17 +6,21 @@ It adds:
 - a top-bar status indicator
 - a Quick Settings toggle
 - connection status and location list
+- login/logout actions
 - reconnect last
 - up to 3 favorites
+- free-plan warning when the account is on the free tier
 - preferences for CLI path, polling interval, notifications, duration display, and favorites
 
 ## Features
 
 - Top bar icon: green when connected, grey when disconnected
-- Quick Settings toggle for connect/disconnect
+- Quick Settings toggle for connect/disconnect and login when needed
 - Fastest-location connect
+- Login / logout actions
 - Reconnect last used location
 - Up to 3 favorites in a submenu
+- Free-plan warning in the menu and status updates
 - Location list with ping sorting
 - Desktop notifications on state changes
 - Auto-refresh every 15 seconds by default

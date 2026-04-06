@@ -47,6 +47,9 @@ class VPNController {
 			connectedSince: 0,
 			statusLabel: "Checking…",
 			locations: [],
+			loggedIn: true,
+			freeAccount: false,
+			accountLabel: "Checking account…",
 			error: "",
 		};
 
@@ -78,6 +81,14 @@ class VPNController {
 
 	get notificationsEnabled() {
 		return this._settings.get_boolean("notifications");
+	}
+
+	get loggedIn() {
+		return this.state.loggedIn;
+	}
+
+	get freeAccount() {
+		return this.state.freeAccount;
 	}
 
 	addObserver(callback, immediate = true) {
@@ -152,6 +163,8 @@ class VPNController {
 		const previous = {
 			connected: this.state.connected,
 			location: this.state.location,
+			loggedIn: this.state.loggedIn,
+			freeAccount: this.state.freeAccount,
 		};
 
 		if (!output) {
@@ -159,30 +172,56 @@ class VPNController {
 			return previous;
 		}
 
-		const lines = output
+		const text = output
 			.split("\n")
-			.map((line) => line.trim())
-			.filter(Boolean);
-		const firstLine = lines[0] ?? "";
+			.map((line) => stripAnsi(line).trim())
+			.filter(Boolean)
+			.join("\n");
+		const firstLine = text.split("\n")[0] ?? "";
 
-		if (/^Connected to\s+/i.test(firstLine)) {
-			const match = firstLine.match(/^Connected to\s+(.+?)\s+in\s+/i);
-			this.state.connected = true;
-			this.state.location =
-				match?.[1]?.trim() ??
-				firstLine
-					.replace(/^Connected to\s+/i, "")
-					.replace(/\s+in\s+.*$/, "")
-					.trim();
-			this.state.error = "";
-			if (!previous.connected) {
-				this.state.connectedSince = Date.now();
-			}
-		} else {
+		if (/not logged in/i.test(text)) {
+			this.state.loggedIn = false;
 			this.state.connected = false;
 			this.state.location = "";
 			this.state.connectedSince = 0;
+			this.state.accountLabel = "🔒 Not logged in";
+			this.state.freeAccount = false;
 			this.state.error = "";
+		} else {
+			if (this.state.loggedIn) {
+				this.state.freeAccount = /free version/i.test(text)
+					? true
+					: this.state.freeAccount;
+			}
+
+			if (/^Connected to\s+/i.test(firstLine)) {
+				const match = firstLine.match(/^Connected to\s+(.+?)\s+in\s+/i);
+				this.state.connected = true;
+				this.state.location =
+					match?.[1]?.trim() ??
+					firstLine
+						.replace(/^Connected to\s+/i, "")
+						.replace(/\s+in\s+.*$/, "")
+						.trim();
+				this.state.error = "";
+				if (!previous.connected) {
+					this.state.connectedSince = Date.now();
+				}
+			} else {
+				this.state.connected = false;
+				this.state.location = "";
+				this.state.connectedSince = 0;
+				this.state.error = "";
+			}
+
+			if (
+				!this.state.accountLabel ||
+				/^🔒 Not logged in/.test(this.state.accountLabel)
+			) {
+				this.state.accountLabel = this.state.freeAccount
+					? "⚠ Free plan"
+					: "✅ Logged in";
+			}
 		}
 
 		const duration =
@@ -194,6 +233,8 @@ class VPNController {
 			this.state.statusLabel = duration
 				? `🟢 ${this.state.location} — ${duration}`
 				: `🟢 ${this.state.location}`;
+		} else if (!this.state.loggedIn) {
+			this.state.statusLabel = "🔒 Not logged in";
 		} else {
 			this.state.statusLabel = "🔴 VPN Off";
 		}
@@ -208,6 +249,7 @@ class VPNController {
 			.filter((line) => line && /^[A-Z]{2}\s+/.test(line));
 
 		const items = [];
+		const seen = new Set();
 		for (const line of lines) {
 			const match = line.match(/^([A-Z]{2})\s+(.+?)\s{2,}(.+?)\s{2,}(\d+)$/);
 			if (!match) {
@@ -215,10 +257,17 @@ class VPNController {
 			}
 
 			const [, iso, country, city, ping] = match;
+			const normalizedCity = city.trim();
+			const normalizedCountry = country.trim();
+			const key = `${normalizedCountry}|${normalizedCity}`;
+			if (seen.has(key)) {
+				continue;
+			}
+			seen.add(key);
 			items.push({
 				iso,
-				country: country.trim(),
-				city: city.trim(),
+				country: normalizedCountry,
+				city: normalizedCity,
 				ping: Number.parseInt(ping, 10),
 			});
 		}
@@ -256,11 +305,72 @@ class VPNController {
 		return this.state.locations;
 	}
 
+	async refreshAccount({ notify = false } = {}) {
+		const { stdout, stderr } = await this._exec(["license"]);
+		const previous = {
+			loggedIn: this.state.loggedIn,
+			freeAccount: this.state.freeAccount,
+		};
+		const text = (stdout || stderr || "")
+			.split("\n")
+			.map((line) => stripAnsi(line).trim())
+			.filter(Boolean)
+			.join("\n");
+
+		if (!text) {
+			this.state.error = "No license output";
+			this._emit();
+			return previous;
+		}
+
+		if (/not logged in/i.test(text)) {
+			this.state.loggedIn = false;
+			this.state.freeAccount = false;
+			this.state.accountLabel = "🔒 Not logged in";
+			this.state.error = "";
+		} else {
+			this.state.loggedIn = true;
+			this.state.freeAccount = /free version/i.test(text);
+
+			const accountMatch = text.match(/^Logged in as\s+(.+)$/im);
+			const account = accountMatch?.[1]?.trim();
+			this.state.accountLabel = this.state.freeAccount
+				? account
+					? `⚠ Free plan — ${account}`
+					: "⚠ Free plan"
+				: account
+					? `✅ Logged in as ${account}`
+					: "✅ Logged in";
+			this.state.error = "";
+		}
+
+		this._emit();
+
+		if (notify && this.notificationsEnabled) {
+			if (!previous.loggedIn && this.state.loggedIn) {
+				this._notify(
+					EXTENSION_NAME,
+					this.state.freeAccount
+						? "Signed in to a free AdGuard VPN account"
+						: "Signed in to AdGuard VPN",
+				);
+			} else if (previous.loggedIn && !this.state.loggedIn) {
+				this._notify(EXTENSION_NAME, "Signed out of AdGuard VPN");
+			} else if (!previous.freeAccount && this.state.freeAccount) {
+				this._notify(
+					EXTENSION_NAME,
+					"Free AdGuard VPN plan detected: fewer locations available",
+				);
+			}
+		}
+
+		return this.state;
+	}
+
 	async refreshAll({ notify = false } = {}) {
-		await Promise.all([
-			this.refreshStatus({ notify }),
-			this.refreshLocations(),
-		]);
+		await this.refreshAccount({ notify });
+		await this.refreshStatus({ notify });
+		await this.refreshLocations();
 		return this.state;
 	}
 
@@ -271,6 +381,24 @@ class VPNController {
 			this._emit();
 		}
 		await this.refreshStatus({ notify: true });
+	}
+
+	async login() {
+		const { stderr } = await this._exec(["login"]);
+		if (stderr) {
+			this.state.error = stderr;
+			this._emit();
+		}
+		await this.refreshAll({ notify: true });
+	}
+
+	async logout() {
+		const { stderr } = await this._exec(["logout"]);
+		if (stderr) {
+			this.state.error = stderr;
+			this._emit();
+		}
+		await this.refreshAll({ notify: true });
 	}
 
 	async reconnectLast() {
@@ -307,6 +435,11 @@ class VPNController {
 	}
 
 	async toggle() {
+		if (!this.state.loggedIn) {
+			await this.login();
+			return;
+		}
+
 		if (this.state.connected) {
 			await this.disconnect();
 			return;
@@ -321,7 +454,7 @@ class VPNController {
 			GLib.PRIORITY_DEFAULT,
 			this.pollInterval,
 			() => {
-				this.refreshStatus();
+				this.refreshAll();
 				return GLib.SOURCE_CONTINUE;
 			},
 		);
@@ -362,7 +495,20 @@ const VPNIndicator = GObject.registerClass(
 				reactive: false,
 			});
 			this.menu.addMenuItem(this._statusItem);
+
+			this._accountItem = new PopupMenu.PopupMenuItem("Checking account…", {
+				reactive: false,
+			});
+			this.menu.addMenuItem(this._accountItem);
 			this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+			this._loginItem = new PopupMenu.PopupMenuItem("🔑 Log in");
+			this._loginItem.connect("activate", () => this._service.login());
+			this.menu.addMenuItem(this._loginItem);
+
+			this._logoutItem = new PopupMenu.PopupMenuItem("🚪 Log out");
+			this._logoutItem.connect("activate", () => this._service.logout());
+			this.menu.addMenuItem(this._logoutItem);
 
 			this._connectFastest = new PopupMenu.PopupMenuItem("⚡ Connect Fastest");
 			this._connectFastest.connect("activate", () =>
@@ -416,12 +562,21 @@ const VPNIndicator = GObject.registerClass(
 
 		_sync(state) {
 			this._statusItem.label.set_text(state.statusLabel || "Checking…");
+			this._accountItem.label.set_text(
+				state.accountLabel || "Checking account…",
+			);
 			this._icon.style = state.connected
 				? "color: #4caf50;"
-				: "color: #9e9e9e;";
-			this._connectFastest.visible = !state.connected;
-			this._reconnectLast.visible = !state.connected;
-			this._disconnectItem.visible = state.connected;
+				: state.loggedIn
+					? "color: #9e9e9e;"
+					: "color: #d97706;";
+			this._loginItem.visible = !state.loggedIn;
+			this._logoutItem.visible = state.loggedIn;
+			this._connectFastest.visible = state.loggedIn && !state.connected;
+			this._reconnectLast.visible = state.loggedIn && !state.connected;
+			this._favoritesSubmenu.visible = state.loggedIn;
+			this._disconnectItem.visible = state.loggedIn && state.connected;
+			this._locationsSubmenu.visible = state.loggedIn;
 			this._buildFavorites();
 			this._buildLocations(state.locations);
 		}
@@ -494,10 +649,20 @@ const VPNQuickToggle = GObject.registerClass(
 			);
 			this.connect("clicked", () => this._service.toggle());
 
-			const reconnectLastItem = this.menu.addAction("Reconnect Last", () =>
+			this._loginItem = this.menu.addAction("Log in", () =>
+				this._service.login(),
+			);
+			this._loginItem.visible = false;
+
+			this._logoutItem = this.menu.addAction("Log out", () =>
+				this._service.logout(),
+			);
+			this._logoutItem.visible = false;
+
+			this._reconnectLastItem = this.menu.addAction("Reconnect Last", () =>
 				this._service.reconnectLast(),
 			);
-			reconnectLastItem.visible = true;
+			this._reconnectLastItem.visible = true;
 
 			const refreshItem = this.menu.addAction("Refresh", () =>
 				this._service.refreshAll(),
@@ -518,8 +683,14 @@ const VPNQuickToggle = GObject.registerClass(
 
 		_sync(state) {
 			this.checked = state.connected;
-			this.subtitle = state.statusLabel || "Checking…";
+			this.subtitle =
+				state.freeAccount && state.loggedIn
+					? `${state.statusLabel || "Checking…"} • Free plan`
+					: state.statusLabel || "Checking…";
 			this.title = EXTENSION_NAME;
+			this._loginItem.visible = !state.loggedIn;
+			this._logoutItem.visible = state.loggedIn;
+			this._reconnectLastItem.visible = state.loggedIn && !state.connected;
 		}
 
 		destroy() {
