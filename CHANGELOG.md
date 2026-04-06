@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Quick Settings integration now uses the GNOME Shell quick settings instance instead of calling a missing method on the exported class
+- Removed invalid `-y` flag from `disconnect` (AdGuard VPN CLI does not accept it)
 
 ## [0.2.0] - 2026-04-06
 
