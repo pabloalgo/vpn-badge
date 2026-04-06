@@ -8,7 +8,6 @@ import * as PanelMenu from "resource:///org/gnome/shell/ui/panelMenu.js";
 import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
 import {
 	QuickMenuToggle,
-	QuickSettingsMenu,
 	SystemIndicator,
 } from "resource:///org/gnome/shell/ui/quickSettings.js";
 
@@ -489,8 +488,11 @@ const VPNQuickSettings = GObject.registerClass(
 				new VPNQuickToggle(this._service, this._extension),
 			);
 
-			// Add to Quick Settings panel
-			QuickSettingsMenu.addExternalIndicator(this);
+			// Add to Quick Settings panel if available
+			const quickSettingsPanel = Main.panel.statusArea.quickSettings;
+			if (quickSettingsPanel) {
+				quickSettingsPanel.addExternalIndicator(this, 2);
+			}
 		}
 
 		destroy() {

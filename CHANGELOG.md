@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Connection duration display in the status label
 - GSettings schema and install targets
 
+### Fixed
+- Quick Settings integration now uses the GNOME Shell quick settings instance instead of calling a missing method on the exported class
+
 ## [0.2.0] - 2026-04-06
 
 ### Added
